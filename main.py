@@ -335,7 +335,7 @@ if __name__ == "__main__":
 
         # record state on TB
         for x in logger._tabular:
-            writer.add_scalar(x[0], x[1], num_epochs)
+            writer.add_scalar(x[0], float(x[1]), num_epochs)
         writer.file_writer.flush()
         num_epochs += 1
 
