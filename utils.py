@@ -5,13 +5,13 @@ import gzip
 class ReplayBuffer(object):
 	def __init__(self, state_dim=10, action_dim=4):
 		self.storage = dict()
-		self.storage['observations'] = np.zeros((1000000, state_dim), np.float32)
-		self.storage['next_observations'] = np.zeros((1000000, state_dim), np.float32)
-		self.storage['actions'] = np.zeros((1000000, action_dim), np.float32)
-		self.storage['rewards'] = np.zeros((1000000, 1), np.float32)
-		self.storage['terminals'] = np.zeros((1000000, 1), np.float32)
-		self.storage['bootstrap_mask'] = np.zeros((10000000, 4), np.float32)
-		self.buffer_size = 100000000 #1000000
+		self.storage['observations'] = np.zeros((1500000, state_dim), np.float32)
+		self.storage['next_observations'] = np.zeros((1500000, state_dim), np.float32)
+		self.storage['actions'] = np.zeros((1500000, action_dim), np.float32)
+		self.storage['rewards'] = np.zeros((1500000, 1), np.float32)
+		self.storage['terminals'] = np.zeros((1500000, 1), np.float32)
+		self.storage['bootstrap_mask'] = np.zeros((15000000, 4), np.float32)
+		self.buffer_size = 1500000
 		self.ctr = 0
 
 	# Expects tuples of (state, next_state, action, reward, done)
