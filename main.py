@@ -15,6 +15,8 @@ from logger import logger, setup_logger
 from logger import create_stats_ordered_dict
 import point_mass
 
+import mujoco_py
+
 FILE_PATH = os.path.dirname(os.path.abspath(__file__))
 
 # Runs policy for X episodes and returns average reward
@@ -30,16 +32,22 @@ def evaluate_policy(policy, eval_episodes=10, horizon=1000):
         done = False
         success = False
         cntr = 0
-        # while ((not done)):
-        for _ in range(horizon):
-            obs = np.concatenate([obs["robot-state"], obs["object-state"]])
-            action = policy.select_action(np.array(obs))
-            obs, reward, done, _ = env.step(action)
-            avg_reward += reward
-            success = success or env._check_success()
-            cntr += 1
+        try:
+            # while ((not done)):
+            for _ in range(horizon):
+                obs = np.concatenate([obs["robot-state"], obs["object-state"]])
+                action = policy.select_action(np.array(obs))
+                obs, reward, done, _ = env.step(action)
+                avg_reward += reward
+                success = success or env._check_success()
+                cntr += 1
+        except mujoco_py.builder.MujocoException as e:
+            print("WARNING: got exception {}".format(e))
+            avg_reward = 0.
+            success = False
         all_rewards.append(avg_reward)
         success_rate += float(success)
+
     avg_reward /= eval_episodes
     success_rate /= eval_episodes
     for j in range(eval_episodes-1, 1, -1):
@@ -68,15 +76,20 @@ def evaluate_policy_discounted(policy, eval_episodes=10, horizon=1000):
         success = False
         cntr = 0
         gamma_t = 1
-        # while ((not done)):
-        for _ in range(horizon):
-            obs = np.concatenate([obs["robot-state"], obs["object-state"]])
-            action = policy.select_action(np.array(obs))
-            obs, reward, done, _ = env.step(action)
-            avg_reward += (gamma_t * reward)
-            success = success or env._check_success()
-            gamma_t = gamma * gamma_t
-            cntr += 1
+        try:
+            # while ((not done)):
+            for _ in range(horizon):
+                obs = np.concatenate([obs["robot-state"], obs["object-state"]])
+                action = policy.select_action(np.array(obs))
+                obs, reward, done, _ = env.step(action)
+                avg_reward += (gamma_t * reward)
+                success = success or env._check_success()
+                gamma_t = gamma * gamma_t
+                cntr += 1
+        except mujoco_py.builder.MujocoException as e:
+            print("WARNING: got exception {}".format(e))
+            avg_reward = 0.
+            success = False
         all_rewards.append(avg_reward)
         success_rate += float(success)
     avg_reward /= eval_episodes
