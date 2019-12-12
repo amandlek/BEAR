@@ -381,6 +381,16 @@ class BEAR(object):
             ind = q1.max(0)[1]
         return action[ind].cpu().data.numpy().flatten()
     
+    def get_dict_to_save(self):
+        return {
+            "actor": self.actor.state_dict(),
+            "actor_target": self.actor_target.state_dict(),
+            "critic": self.critic.state_dict(),
+            "critic_target": self.critic_target.state_dict(),
+            "vae": self.vae.state_dict(),
+            "log_lagrange2": self.log_lagrange2.detach().squeeze().cpu().numpy(),
+        }
+
     def train(self, replay_buffer, iterations, batch_size=100, discount=0.99, tau=0.005):
         for it in range(iterations):
             state_np, next_state_np, action, reward, done, mask = replay_buffer.sample(batch_size)
@@ -880,6 +890,15 @@ class BCQ(object):
             state = torch.FloatTensor(state.reshape(1, -1)).to(device)
             action = self.vae.decode_bc_test(state)
         return action[0].cpu().data.numpy().flatten()
+
+    def get_dict_to_save(self):
+        return {
+            "actor": self.actor.state_dict(),
+            "actor_target": self.actor_target.state_dict(),
+            "critic": self.critic.state_dict(),
+            "critic_target": self.critic_target.state_dict(),
+            "vae": self.vae.state_dict(),
+        }
 
     def train(self, replay_buffer, iterations, batch_size=100, discount=0.99, tau=0.005):
         for it in range(iterations):
