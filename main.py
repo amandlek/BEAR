@@ -273,7 +273,7 @@ if __name__ == "__main__":
         margin_threshold=args.margin_threshold,
     )
     log_dir = "./logs/"
-    setup_logger(file_name, variant=variant, log_dir=log_dir + file_name)
+    setup_logger(file_name, variant=variant, log_dir=log_dir + args.name)
 
     if algo_name == 'BCQ':
         policy = algos.BCQ(state_dim, action_dim, max_action)
