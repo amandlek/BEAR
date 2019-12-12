@@ -332,6 +332,7 @@ if __name__ == "__main__":
         logger.record_tabular('AverageReturn', ret_eval)
         logger.record_tabular('VarianceReturn', var_ret)
         logger.record_tabular('MedianReturn', median_ret)
+        logger.record_tabular('SuccessRate', success_rate)
 
         # record state on TB
         for x in logger._tabular:
@@ -342,7 +343,7 @@ if __name__ == "__main__":
         logger.dump_tabular()
 
         # save model every hour or when last record is beat
-        if time.time() - last_time_saved > 0: # 3600:
+        if time.time() - last_time_saved > 3600:
             params_to_save = policy.get_dict_to_save()
             path_to_save = os.path.join(output_dir, "model_epoch_{}.pth".format(num_epochs))
             torch.save(params_to_save, path_to_save)
