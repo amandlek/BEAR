@@ -19,10 +19,10 @@ from collections import OrderedDict
 from numbers import Number
 import os
 
-# We need rlkit for this
-from rlkit.core.tabulate import tabulate
+# # We need rlkit for this
+# from rlkit.core.tabulate import tabulate
+from tabulate import tabulate # copy of rlkit implementation
 import dateutil.tz
-import rlkit.pythonplusplus as ppp
 import os.path as osp
 
 def dict_to_safe_json(d):

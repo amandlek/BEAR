@@ -5,6 +5,8 @@ import torch.nn.functional as F
 import utils
 import torch.distributions as td
 
+from tqdm import tqdm
+
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 from logger import logger
 from logger import create_stats_ordered_dict
@@ -284,20 +286,21 @@ class VAE(nn.Module):
 class BEAR(object):
     def __init__(self, num_qs, state_dim, action_dim, max_action, delta_conf=0.1, use_bootstrap=True, version=0, lambda_=0.4,
                  threshold=0.05, mode='auto', num_samples_match=10, mmd_sigma=10.0,
-                 lagrange_thresh=10.0, use_kl=False, use_ensemble=True, kernel_type='laplacian'):
+                 lagrange_thresh=10.0, use_kl=False, use_ensemble=True, kernel_type='laplacian',
+                 actor_lr=0.001, critic_lr=0.001, vae_lr=0.001):
         latent_dim = action_dim * 2
         self.actor = RegularActor(state_dim, action_dim, max_action).to(device)
         self.actor_target = RegularActor(state_dim, action_dim, max_action).to(device)
         self.actor_target.load_state_dict(self.actor.state_dict())
-        self.actor_optimizer = torch.optim.Adam(self.actor.parameters())
+        self.actor_optimizer = torch.optim.Adam(self.actor.parameters(), lr=actor_lr)
 
         self.critic = EnsembleCritic(num_qs, state_dim, action_dim).to(device)
         self.critic_target = EnsembleCritic(num_qs, state_dim, action_dim).to(device)
         self.critic_target.load_state_dict(self.critic.state_dict())
-        self.critic_optimizer = torch.optim.Adam(self.critic.parameters())
+        self.critic_optimizer = torch.optim.Adam(self.critic.parameters(), lr=critic_lr)
 
         self.vae = VAE(state_dim, action_dim, latent_dim, max_action).to(device)
-        self.vae_optimizer = torch.optim.Adam(self.vae.parameters()) 
+        self.vae_optimizer = torch.optim.Adam(self.vae.parameters(), lr=vae_lr) 
 
         self.max_action = max_action
         self.action_dim = action_dim
@@ -382,7 +385,7 @@ class BEAR(object):
         return action[ind].cpu().data.numpy().flatten()
     
     def train(self, replay_buffer, iterations, batch_size=100, discount=0.99, tau=0.005):
-        for it in range(iterations):
+        for it in tqdm(range(iterations)):
             state_np, next_state_np, action, reward, done, mask = replay_buffer.sample(batch_size)
             state           = torch.FloatTensor(state_np).to(device)
             action          = torch.FloatTensor(action).to(device)
@@ -556,20 +559,21 @@ class BEAR_IS(object):
     """Using Importance sampling on the bellman error, essentially making it agnostic of the 
        behaviour policy density, and care only about the support"""
     def __init__(self, num_qs, state_dim, action_dim, max_action, delta_conf=0.1, use_bootstrap=True, version=0, lambda_=0.4, threshold=0.05,
-                 mode='hardcoded', num_samples_match=10, mmd_sigma=10.0, lagrange_thresh=10.0, use_kl=False, use_ensemble=True, kernel_type='laplacian'):
+                 mode='hardcoded', num_samples_match=10, mmd_sigma=10.0, lagrange_thresh=10.0, use_kl=False, use_ensemble=True, kernel_type='laplacian',
+                 actor_lr=0.001, critic_lr=0.001, vae_lr=0.001):
         latent_dim = action_dim * 2
         self.actor = RegularActor(state_dim, action_dim, max_action).to(device)
         self.actor_target = RegularActor(state_dim, action_dim, max_action).to(device)
         self.actor_target.load_state_dict(self.actor.state_dict())
-        self.actor_optimizer = torch.optim.Adam(self.actor.parameters())
+        self.actor_optimizer = torch.optim.Adam(self.actor.parameters(), lr=actor_lr)
 
         self.critic = EnsembleCritic(num_qs, state_dim, action_dim).to(device)
         self.critic_target = EnsembleCritic(num_qs, state_dim, action_dim).to(device)
         self.critic_target.load_state_dict(self.critic.state_dict())
-        self.critic_optimizer = torch.optim.Adam(self.critic.parameters())
+        self.critic_optimizer = torch.optim.Adam(self.critic.parameters(), lr=critic_lr)
 
         self.vae = VAE(state_dim, action_dim, latent_dim, max_action).to(device)
-        self.vae_optimizer = torch.optim.Adam(self.vae.parameters()) 
+        self.vae_optimizer = torch.optim.Adam(self.vae.parameters(), lr=vae_lr) 
 
         self.max_action = max_action
         self.action_dim = action_dim
@@ -650,7 +654,7 @@ class BEAR_IS(object):
         return action[ind].cpu().data.numpy().flatten()
     
     def train(self, replay_buffer, iterations, batch_size=100, discount=0.99, tau=0.005):
-        for it in range(iterations):
+        for it in tqdm(range(iterations)):
             # Sample replay buffer / batch
             state_np, next_state_np, action, reward, done, mask, data_mean, data_cov = replay_buffer.sample(batch_size, with_data_policy=True)
             state           = torch.FloatTensor(state_np).to(device)
@@ -844,21 +848,21 @@ class BEAR_IS(object):
         self.epoch = self.epoch + 1
 
 class BCQ(object):
-    def __init__(self, state_dim, action_dim, max_action, cloning=False):
+    def __init__(self, state_dim, action_dim, max_action, cloning=False, actor_lr=0.001, critic_lr=0.001, vae_lr=0.001):
         latent_dim = action_dim * 2
 
         self.actor = Actor(state_dim, action_dim, max_action).to(device)
         self.actor_target = Actor(state_dim, action_dim, max_action).to(device)
         self.actor_target.load_state_dict(self.actor.state_dict())
-        self.actor_optimizer = torch.optim.Adam(self.actor.parameters())
+        self.actor_optimizer = torch.optim.Adam(self.actor.parameters(), lr=actor_lr)
 
         self.critic = Critic(state_dim, action_dim).to(device)
         self.critic_target = Critic(state_dim, action_dim).to(device)
         self.critic_target.load_state_dict(self.critic.state_dict())
-        self.critic_optimizer = torch.optim.Adam(self.critic.parameters())
+        self.critic_optimizer = torch.optim.Adam(self.critic.parameters(), lr=critic_lr)
 
         self.vae = VAE(state_dim, action_dim, latent_dim, max_action).to(device)
-        self.vae_optimizer = torch.optim.Adam(self.vae.parameters()) 
+        self.vae_optimizer = torch.optim.Adam(self.vae.parameters(), lr=vae_lr) 
 
         self.max_action = max_action
         self.action_dim = action_dim
@@ -882,7 +886,7 @@ class BCQ(object):
         return action[0].cpu().data.numpy().flatten()
 
     def train(self, replay_buffer, iterations, batch_size=100, discount=0.99, tau=0.005):
-        for it in range(iterations):
+        for it in tqdm(range(iterations)):
             # print ('Iteration : ', it)
             # Sample replay buffer / batch
             state_np, next_state_np, action, reward, done, mask = replay_buffer.sample(batch_size)
@@ -1006,7 +1010,7 @@ class DQfD(object):
         policy_noise = 0.2
         noise_clip = 0.5
 
-        for it in range(iterations):
+        for it in tqdm(range(iterations)):
             state_np, next_state_np, action_np, reward, done, mask = replay_buffer.sample(batch_size)
             state           = torch.FloatTensor(state_np).to(device)
             action          = torch.FloatTensor(action_np).to(device)
@@ -1142,7 +1146,7 @@ class KLControl(object):
         return self.actor(state).cpu().data.numpy().flatten()
 
     def train(self, replay_buffer, iterations, batch_size=100, discount=0.98, tau=0.005):
-        for it in range(iterations):
+        for it in tqdm(range(iterations)):
             state_np, next_state_np, action_np, reward, done, mask = replay_buffer.sample(batch_size)
             state           = torch.FloatTensor(state_np).to(device)
             action          = torch.FloatTensor(action_np).to(device)
