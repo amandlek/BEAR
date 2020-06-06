@@ -4,13 +4,13 @@ import torch
 import argparse
 import os
 
-import utils
-import DDPG
-import algos
-import TD3
-from logger import logger, setup_logger
-from logger import create_stats_ordered_dict
-import point_mass
+import BEAR.utils as utils
+import BEAR.DDPG as DDPG
+import BEAR.algos as algos
+import BEAR.TD3 as TD3
+from BEAR.logger import logger, setup_logger
+from BEAR.logger import create_stats_ordered_dict
+import BEAR.point_mass as point_mass
 
 import d4rl
 
