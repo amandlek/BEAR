@@ -396,6 +396,17 @@ class BEAR(object):
             ind = q1.max(0)[1]
         return action[ind].cpu().data.numpy().flatten()
     
+    def get_action(self, state):
+        """
+        A copy of @select_action that returns actions as a tensor instead of converting to numpy.
+        """
+        with torch.no_grad():
+            state = torch.FloatTensor(state.reshape(1, -1)).repeat(10, 1).to(self.device)
+            action = self.actor(state)
+            q1 = self.critic.q1(state, action)
+            ind = q1.max(0)[1]
+        return action[ind]
+
     def train_on_batch(self, batch, epoch):
         """
         A copy of @train with a few changes:
@@ -405,13 +416,16 @@ class BEAR(object):
         """
         assert not self.use_bootstrap
 
-        ### TODO: make sure reward, done have last dim 1 ###
-
         state = batch["state"]
         action = batch["action"]
         next_state = batch["next_state"]
         reward = batch["reward"]
         done = 1. - batch["done"]
+        batch_size = action.shape[0]
+
+        # hardcoded
+        discount = 0.99
+        tau = 0.005
         
         # Train the Behaviour cloning policy to be able to take more than 1 sample for MMD
         recon, mean, std = self.vae(state, action)
@@ -426,7 +440,10 @@ class BEAR(object):
         # Critic Training: In this step, we explicitly compute the actions 
         with torch.no_grad():
             # Duplicate state 10 times (10 is a hyperparameter chosen by BCQ)
-            state_rep = torch.FloatTensor(np.repeat(next_state_np, 10, axis=0)).to(self.device)
+            state_rep = torch.cat(
+                10 * [next_state.unsqueeze(1)], 
+                dim=1).reshape(-1, *next_state.shape[1:])
+            # state_rep = torch.FloatTensor(np.repeat(next_state_np, 10, axis=0)).to(self.device)
             
             # Compute value of perturbed actions sampled from the VAE
             target_Qs = self.critic_target(state_rep, self.actor_target(state_rep))
