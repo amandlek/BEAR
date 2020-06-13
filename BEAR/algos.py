@@ -401,7 +401,10 @@ class BEAR(object):
         A copy of @select_action that returns actions as a tensor instead of converting to numpy.
         """
         with torch.no_grad():
-            state = torch.FloatTensor(state.reshape(1, -1)).repeat(10, 1).to(self.device)
+            # Duplicate state 10 times (10 is a hyperparameter chosen by BCQ)
+            state = torch.cat(
+                10 * [state.unsqueeze(1)], 
+                dim=1).reshape(-1, *state.shape[1:])
             action = self.actor(state)
             q1 = self.critic.q1(state, action)
             ind = q1.max(0)[1]
