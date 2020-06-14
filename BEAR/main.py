@@ -3,6 +3,7 @@ import numpy as np
 import torch
 import argparse
 import os
+import h5py
 
 import BEAR.utils as utils
 import BEAR.DDPG as DDPG
@@ -12,7 +13,7 @@ from BEAR.logger import logger, setup_logger
 from BEAR.logger import create_stats_ordered_dict
 import BEAR.point_mass as point_mass
 
-import d4rl
+# import d4rl
 
 def load_hdf5_mujoco(dataset, replay_buffer):
     """
@@ -221,10 +222,13 @@ if __name__ == "__main__":
 
     # Load buffer
     replay_buffer = utils.ReplayBuffer()
-    if 'maze' in args.env_name or 'human' in args.env_name or 'cloned' in args.env_name:
-        load_hdf5_others(env.unwrapped.get_dataset(), replay_buffer)
-    else:
-        load_hdf5_mujoco(env.unwrapped.get_dataset(), replay_buffer)
+    f = h5py.File("/home/robot/Desktop/d4rl/halfcheetah_medium_expert.hdf5", "r")
+    load_hdf5_mujoco(f, replay_buffer)
+    f.close()
+    # if 'maze' in args.env_name or 'human' in args.env_name or 'cloned' in args.env_name:
+    #     load_hdf5_others(env.unwrapped.get_dataset(), replay_buffer)
+    # else:
+    #     load_hdf5_mujoco(env.unwrapped.get_dataset(), replay_buffer)
     
     evaluations = []
 

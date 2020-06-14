@@ -292,7 +292,7 @@ class VAE(nn.Module):
 class BEAR(object):
     def __init__(self, num_qs, state_dim, action_dim, max_action, delta_conf=0.1, use_bootstrap=True, version=0, lambda_=0.4,
                  threshold=0.05, mode='auto', num_samples_match=10, mmd_sigma=10.0,
-                 lagrange_thresh=10.0, use_kl=False, use_ensemble=True, kernel_type='laplacian',
+                 lagrange_thresh=10.0, use_kl=False, use_ensemble=False, kernel_type='laplacian',
                  actor_lr=0.001, critic_lr=0.001, vae_lr=0.001, warmstart_epoch=20, device_=None):
         self.device = device_
         if self.device is None:
@@ -483,6 +483,7 @@ class BEAR(object):
                 mmd_loss = self.mmd_loss_gaussian(raw_sampled_actions, raw_actor_actions, sigma=self.mmd_sigma)
             else:
                 mmd_loss = self.mmd_loss_laplacian(raw_sampled_actions, raw_actor_actions, sigma=self.mmd_sigma)
+        mmd_loss = mmd_loss.unsqueeze(1)
 
         action_divergence = ((sampled_actions - actor_actions)**2).sum(-1)
         raw_action_divergence = ((raw_sampled_actions - raw_actor_actions)**2).sum(-1)
@@ -508,11 +509,11 @@ class BEAR(object):
         if epoch >= self.warmstart_epoch: 
             if self.mode == 'auto':
                 actor_loss = (-critic_qs +\
-                    self._lambda * (np.sqrt((1 - self.delta_conf)/self.delta_conf)) * std_q +\
+                    # self._lambda * (np.sqrt((1 - self.delta_conf)/self.delta_conf)) * std_q +\
                     self.log_lagrange2.exp() * mmd_loss).mean()
             else:
                 actor_loss = (-critic_qs +\
-                    self._lambda * (np.sqrt((1 - self.delta_conf)/self.delta_conf)) * std_q +\
+                    # self._lambda * (np.sqrt((1 - self.delta_conf)/self.delta_conf)) * std_q +\
                     100.0*mmd_loss).mean()      # This coefficient is hardcoded, and is different for different tasks. I would suggest using auto, as that is the one used in the paper and works better.
         else:
             if self.mode == 'auto':
@@ -660,6 +661,7 @@ class BEAR(object):
                     mmd_loss = self.mmd_loss_gaussian(raw_sampled_actions, raw_actor_actions, sigma=self.mmd_sigma)
                 else:
                     mmd_loss = self.mmd_loss_laplacian(raw_sampled_actions, raw_actor_actions, sigma=self.mmd_sigma)
+            mmd_loss = mmd_loss.unsqueeze(1)
 
             action_divergence = ((sampled_actions - actor_actions)**2).sum(-1)
             raw_action_divergence = ((raw_sampled_actions - raw_actor_actions)**2).sum(-1)
